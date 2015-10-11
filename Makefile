@@ -1,6 +1,6 @@
 CC=gcc
-CFLAGS=-std=c99
-LDFLAGS=-lm
+CFLAGS=-Wall
+LDFLAGS=-lm -lrt
 OBJ=nbody_serial.o
 EXEC=nbody_serial
 nbody_serial: $(OBJ)

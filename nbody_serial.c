@@ -3,13 +3,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-//#include "mpi.h"
+#include <omp.h>
+#include <time.h>
+//#include <mpi.h>
 
 /*Global Variables*/
 const int numiterations; /*number of resultant iterations */
 const int simulation_time = 10; /*Time to run simulation for */
 const double dt = 0.01; /*time step every iteration*/
 const double G = 1;
+
 
 /*Position Vector*/
 typedef struct {
@@ -22,16 +25,33 @@ typedef struct {
 /*Particle Vector*/
 Particle*  particles;   /* Particle array storing structs for each particle, number of particles will be defined in the main function */
 int npart;
+
+
 double drand(double min, double max) 
 {
     double range = (max - min); 
     double div = RAND_MAX / range;
     return min + (rand() / div);
 }
+
+float timediff(struct timespec t1, struct timespec t2)
+{  
+    if (t1.tv_nsec > t2.tv_nsec) {
+
+        t2.tv_sec -= 1;
+        t2.tv_nsec += 1000000000;
+
+    }
+
+    return t2.tv_sec-t1.tv_sec + 0.000000001 * (t2.tv_nsec-t1.tv_nsec);
+}
+
+
 /*Initialize particles positions, velocity and acceleration vectors */
 void initParticles(int num_particles){
     particles = malloc(sizeof(Particle)*num_particles);
-    for (int i=0; i<num_particles; i++) {
+    int i = 0;
+    for (i=0; i<num_particles; i++) {
 	particles[i].x	  = drand(0, 1);
 	particles[i].y	  = drand(0, 1);
 	particles[i].z	  = drand(0, 1);
@@ -49,8 +69,9 @@ void initParticles(int num_particles){
 void computeAccelerations(){
     /*calculate the acceleration experienced by the particle due to all other particles in this time step*/
     double r2, r3, acx, acy, acz;
-    for (int i = 0; i < npart; i++){
-	for(int j = 0; j < npart; j++){
+    int i, j;
+    for (i = 0; i < npart; i++){
+	for(j = 0; j < npart; j++){
 	    if (j != i)
 	    {
 		/*for every pair (i,j) except (i,i) do : */
@@ -78,7 +99,8 @@ void computeAccelerations(){
 }
 /*Update position and velocity for next time step based on acceleration computed earlier in computeAccelerations() for this timestep*/
 void updateParticles(){
-    for (int i = 0; i < npart; i++){
+    int i = 0;
+    for (i = 0; i < npart; i++){
 	/*for all particles partcipating in the simulation */
 	/*update velocity vectors in each dimension*/
 	/*equation for update derived from book which temp shared and used by several other reference codes*/
@@ -94,7 +116,8 @@ void updateParticles(){
 }
 
 void begin_simulation(){
-    for(double t = 0; t < simulation_time; t+=dt){
+    double t = 0;
+    for(t = 0; t < simulation_time; t+=dt){
 	/*For every iteration in the simulation, which is controlled by dt, the time step and the end time which is simulation_time*/
 	printf("Time step t:\n");
 	computeAccelerations();
@@ -103,10 +126,18 @@ void begin_simulation(){
 }
 int main(int argc, char *argv[]){
     int num_particles = 0;
+    struct timespec bgn,nd;
+
     num_particles = atoi(argv[1]); /*command line input expected which provides the number of particles */
     npart = num_particles;
+
+    clock_gettime(CLOCK_REALTIME, &bgn);
+
     /*initialize the position of particles in space and also their velocity and acceleration vector values*/
     initParticles(num_particles);
     /*begin the simulation with the initialization done previously and using simulation parameters defined in the global constants*/
     begin_simulation();
+
+    clock_gettime(CLOCK_REALTIME, &nd);
+    printf("%f\n", timediff(bgn,nd));
 }
