@@ -10,8 +10,8 @@
 /*Global Variables*/
 const int numiterations; /*number of resultant iterations */
 const int simulation_time = 10; /*Time to run simulation for */
-const double dt = 0.01; /*time step every iteration*/
-const double G = 1;
+const double dt = 0.1; /*time step every iteration*/
+const double G = 6.673e-11;
 
 
 /*Position Vector*/
@@ -56,12 +56,17 @@ void initParticles(int num_particles){
 	particles[i].y	  = drand(0, 1);
 	particles[i].z	  = drand(0, 1);
 	particles[i].mass = 1.0;
+#if 0
 	particles[i].vx	  = 0;
 	particles[i].vy	  = 0;
 	particles[i].vz	  = 0;
-	particles[i].ax	  = 0;
-	particles[i].ay	  = 0;
-	particles[i].az	  = 0;
+#endif
+	particles[i].vx	  = drand(0, 1);
+	particles[i].vy	  = drand(0, 1);
+	particles[i].vz	  = drand(0, 1);
+	particles[i].ax	  = drand(0, 1);
+	particles[i].ay	  = drand(0, 1);
+	particles[i].az	  = drand(0, 1);
     }
 }
 
@@ -71,6 +76,9 @@ void computeAccelerations(){
     double r2, r3, acx, acy, acz;
     int i, j;
     for (i = 0; i < npart; i++){
+	acx = 0.0;
+	acy = 0.0;
+	acz = 0.0;
 	for(j = 0; j < npart; j++){
 	    if (j != i)
 	    {
@@ -80,11 +88,12 @@ void computeAccelerations(){
 		double rz = particles[j].z - particles[i].z; /*relative distance between particle j and i based on z dimension*/
 		r2 = rx*rx + ry*ry + rz*rz; /*magnitude of the distance squared between the particles i and j using euclidean distance*/
 		r3 = r2 * sqrt(r2); /*distance to the power of 3*/
+		printf("r3 = %g", r3);
 		/*acceleration based on newton's gravitational force equation, masses are unity, and G is 1, could change to define the general equation*/
-		acx += rx / r3;
-		acy += ry/ r3;
-		acz += rz / r3;
-	    }
+		acx += (G * particles[i].mass * particles[j].mass * rx) / r3;
+		acy += (G * particles[i].mass * particles[j].mass * ry)/ r3;
+		acz += (G * particles[i].mass * particles[j].mass * rz) / r3;
+	    } 
 	}
 	/*update acceleration values*/
 	particles[i].ax = acx;
@@ -92,7 +101,7 @@ void computeAccelerations(){
 	particles[i].az = acz;
 	/*For each particle print acceleration in x,y,z dimension folllowed by velocity in x,y,z dimension and lastly the position in x,y,z*/
 	printf("Particle %d:", i);
-	printf(" %f,%f,%f  %f,%f,%f  %f,%f,%f \n", acx, acy, acz, particles[i].vx, particles[i].vy, particles[i].vz,
+	printf(" %g,%g,%g  %g,%g,%g  %g,%g,%g \n", acx, acy, acz, particles[i].vx, particles[i].vy, particles[i].vz,
 		particles[i].x, particles[i].y,particles[i].z);
     }
     printf("\n");
@@ -112,6 +121,7 @@ void updateParticles(){
 	particles[i].x = particles[i].x + particles[i].vx * dt;
 	particles[i].y = particles[i].y + particles[i].vy * dt;
 	particles[i].z = particles[i].z + particles[i].vz * dt;
+	printf(" vx = %g, vy = %g, vz = %g \n", particles[i].vx, particles[i].vy, particles[i].vz);
     }
 }
 
@@ -119,9 +129,9 @@ void begin_simulation(){
     double t = 0;
     for(t = 0; t < simulation_time; t+=dt){
 	/*For every iteration in the simulation, which is controlled by dt, the time step and the end time which is simulation_time*/
-	printf("Time step t:\n");
-	computeAccelerations();
+	printf("Time step t %g:\n", t);
 	updateParticles();
+	computeAccelerations();
     }
 }
 int main(int argc, char *argv[]){
